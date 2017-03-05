@@ -1,0 +1,13 @@
+{
+  "name": "chatSocket",
+  "version": "0.0.0",
+  "description": "websocket chat app",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "nodemon server/index.js"
+  },
+  "author": "Brad Melluish",
+  "dependencies": {
+    "websocket": "^1.0.24"
+  }
+}
