@@ -14,8 +14,37 @@ const
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+class listNode {
+  constructor(m) {
+    this.message = m;
+    this.next = null;
+  }
+}
+class messageList {
+  constructor (max = 100) {
+    this.history = true;
+    this.head = null;
+    this.tail = null;
+    this.maxLength = max;
+    this.length = 0;
+  }
+  remove() {
+    if(!this.head) return;
+    if(this.head === this.tail) this.head = this.tail = null;
+    else this.head = this.head.next;
+    this.length--;
+  }
+  append(message) {
+    if(!this.head) this.head = this.tail = new listNode(message);
+    else {
+      this.tail.next = new listNode(message);
+      this.tail = this.tail.next;
+    }
+    if(++this.length > this.maxLength) this.remove();
+  }
+}
 let
-  history = [],
+  history = new messageList(),
   clients = [];
 
 process.title ='ChatSocket Server';
@@ -37,10 +66,9 @@ wsServer.on('request', req => {
 
   console.log(`${new Date()}: Connection accepted.`);
 
-  if(history.length > 0) 
-    connection.sendUTF(JSON.stringify({
-      type: 'history', data: history
-    }));
+  if(history.length) connection.sendUTF(JSON.stringify({
+    type: 'history', data: history
+  }));
 
   connection.on('message', message => {
     if(message.type === 'utf8') {
@@ -63,8 +91,7 @@ wsServer.on('request', req => {
           json = JSON.stringify({
             type: 'message', data: obj
           });
-        history.push(obj);
-        history = history.slice(-100); //keep last 100
+        history.append(obj);
         clients.forEach(client => client.sendUTF(json));
       }
     }

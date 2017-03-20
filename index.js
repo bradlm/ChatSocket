@@ -1,5 +1,7 @@
 'use strict'; 
-const qs = document.querySelector.bind(document);
+const 
+  DEFAULT_DEBOUNCE = 100,//ms
+  qs = document.querySelector.bind(document);
 function chatClient () {
   let
     content = qs('#content'),
@@ -9,22 +11,58 @@ function chatClient () {
     myName = false, 
     connection;
   function addMessage(messages) {
-    if(!Array.isArray(messages))
-      messages = [messages];
     const format = t => t < 10 ? '0' + t : t;
-    content.innerHTML = messages
-      .reduce((a,b) => {
-        let 
-          dt = new Date(b.time),
-          h = format(dt.getHours()),
-          m = format(dt.getMinutes());
-        return a + `
-          <p>
-            <span style="color: ${b.color}">${b.author}</span> @[${h}:${m}]: ${b.text}
-          </p>
-        `;
-      }, '') + content.innerHTML;
+    let 
+      list = messages.history ? 
+        messages 
+        : {
+            head: {
+              message: messages,
+              next: null
+            }
+          },
+      output = '', 
+      current = list.head; 
+    while(current) {
+      let 
+        msg = current.message,
+        dt = new Date(msg.time),
+        h = format(dt.getHours()),
+        m = format(dt.getMinutes());
+      output += `
+        <p>
+          <span style="color: ${msg.color}">${msg.author}</span> @[${h}:${m}]: ${msg.text}
+        </p>
+      `;
+      current = current.next;
+    }
+    content.innerHTML = output + content.innerHTML; 
   }
+  function debounce (func, wait = DEFAULT_DEBOUNCE) {
+    let timeout, args, context, timestamp, result;
+    const later = () => {
+      let last = Date.now() - timestamp;
+      if (last < wait && last >= 0) {
+        timeout = setTimeout(later, wait - last);
+      } else {
+        timeout = null;
+        result = func.apply(context, args);
+        if (!timeout) context = args = null;
+      }
+    };
+    return function() {
+      context = this;
+      args = arguments;
+      timestamp = Date.now();
+      let callNow = !timeout;
+      if (!timeout) timeout = setTimeout(later, wait);
+      else if (callNow) {
+        result = func.apply(context, args);
+        context = args = null;
+      }
+      return result;
+    };
+  };
   window.WebSocket = window.WebSocket || window.MozWebSocket;
   if(!window.WebSocket) {
     status.innerHTML = `Sorry, your browser doesn't support WebSockets. Cannot connect.`;
@@ -69,7 +107,7 @@ function chatClient () {
       input.focus();
     };
   })();
-  input.addEventListener('keydown', e => {
+  input.addEventListener('keydown', debounce(e => {
     if(e.key === 'Enter') {
       const msg = e.srcElement.value;
       if(!msg) return;
@@ -78,7 +116,7 @@ function chatClient () {
       input.disabled = 'disabled';
       if(myName === false) myName = msg;
     }
-  });
+  }));
 };
 
 document.addEventListener('DOMContentLoaded', chatClient);
