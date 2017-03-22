@@ -13,19 +13,11 @@ function chatClient () {
   function addMessage(messages) {
     const format = t => t < 10 ? '0' + t : t;
     let 
-      list = messages.history ? 
-        messages 
-        : {
-            head: {
-              message: messages,
-              next: null
-            }
-          },
       output = '', 
-      current = list.head; 
+      current = messages.head || messages; 
     while(current) {
       let 
-        msg = current.message,
+        msg = current.message || current,
         dt = new Date(msg.time),
         h = format(dt.getHours()),
         m = format(dt.getMinutes());
@@ -36,7 +28,8 @@ function chatClient () {
       `;
       current = current.next;
     }
-    content.innerHTML = output + content.innerHTML; 
+    content.innerHTML += output; 
+    content.scrollTop = content.scrollHeight;
   }
   function debounce (func, wait = DEFAULT_DEBOUNCE) {
     let timeout, args, context, timestamp, result;
